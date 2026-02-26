@@ -63,14 +63,31 @@ function TableUtil.includes(tbl: { any }, value): boolean
 end
 
 --[=[
+	테이블에 값이 전혀 없는지 확인합니다.
+	@param tbl - 검사할 테이블.
+	@return - 비어 있으면 true.
+]=]
+function TableUtil.isEmpty(tbl: { any }): boolean
+	return next(tbl) == nil
+end
+
+--[=[
 	키가 1..n 형태인지 검사합니다.
 	@param tbl - 검사할 테이블.
 	@return boolean -- 배열 형태면 true.
 ]=]
 function TableUtil.isArray(tbl: { any }): boolean
-	-- Make sure that all keys are positive integers
-	for key, value in pairs(tbl) do
+	local count = 0
+
+	for key in pairs(tbl) do
 		if type(key) ~= "number" or key % 1 ~= 0 or key < 1 then
+			return false
+		end
+		count += 1
+	end
+
+	for i = 1, count do
+		if tbl[i] == nil then
 			return false
 		end
 	end
@@ -93,29 +110,50 @@ end
 	@return - 깊은 복사본.
 ]=]
 function TableUtil.deepClone<T>(tbl: T): T
-	local ret = table.clone(tbl :: any) :: any
-	for k, v in ret do
-		if typeof(v) == "table" then
-			ret[k] = TableUtil.deepClone(v)
-		end
+	if typeof(tbl) ~= "table" then
+		return tbl
 	end
-	return ret
+
+	local seen = {} :: { [any]: any }
+
+	local function cloneTable(source: { [any]: any }): { [any]: any }
+		local cached = seen[source]
+		if cached ~= nil then
+			return cached
+		end
+
+		local ret = table.clone(source)
+		seen[source] = ret
+
+		for k, v in ret do
+			if typeof(v) == "table" then
+				ret[k] = cloneTable(v)
+			end
+		end
+
+		return ret
+	end
+
+	return cloneTable(tbl :: any) :: T
 end
 
 --[=[
 	배열형 테이블을 원본에서 역순으로 뒤집습니다.
 	@param tbl - 역순으로 바꿀 배열.
+	@return - 역순으로 바뀐 원본 배열.
 ]=]
 function TableUtil.reverse<T>(tbl: { T }): { T }
 	if TableUtil.isEmpty(tbl) then
-		error("	bl` must not be empty!", 2)
+		error("`tbl` must not be empty!", 2)
 	elseif TableUtil.isDict(tbl) then
-		error("	bl` must be a array-like table!", 2)
+		error("`tbl` must be an array-like table!", 2)
 	end
 
 	for i = 1, #tbl do
 		insert(tbl, i, remove(tbl))
 	end
+
+	return tbl
 end
 
 --[=[
@@ -125,9 +163,9 @@ end
 ]=]
 function TableUtil.reversed<T>(tbl: { T }): { T }
 	if TableUtil.isEmpty(tbl) then
-		error("	bl` must not be empty!", 2)
+		error("`tbl` must not be empty!", 2)
 	elseif TableUtil.isDict(tbl) then
-		error("	bl` must be a array-like table!", 2)
+		error("`tbl` must be an array-like table!", 2)
 	end
 
 	local ret = {}
@@ -170,6 +208,12 @@ end
 	@return - 선택된 값
 ]=]
 function TableUtil.randomIpair<T>(tbl: { T }): (number, T)
+	if TableUtil.isEmpty(tbl) then
+		error("`tbl` must not be empty!", 2)
+	elseif TableUtil.isDict(tbl) then
+		error("`tbl` must be an array-like table!", 2)
+	end
+
 	local i = random(#tbl)
 	return i, tbl[i]
 end
@@ -181,6 +225,10 @@ end
 	@return - 선택된 값
 ]=]
 function TableUtil.randomPair<T>(tbl: { [any]: T }): (any, T)
+	if TableUtil.isEmpty(tbl) then
+		error("`tbl` must not be empty!", 2)
+	end
+
 	local rand = random(TableUtil.count(tbl))
 	local n = 0
 	for k, v in pairs(tbl) do
@@ -189,8 +237,6 @@ function TableUtil.randomPair<T>(tbl: { [any]: T }): (any, T)
 			return k, v
 		end
 	end
-
-	return
 end
 
 --[=[
@@ -201,8 +247,8 @@ end
 	@param step - 걸음
 	@return - 잘라낸 배열
 ]=]
-function TableUtil.slice<T>(tbl: { T }, start: number?, stop: number?, step: number?): T
-	local ret = {}
+function TableUtil.slice<T>(tbl: { T }, start: number?, stop: number?, step: number?): { T }
+	local ret = {} :: { T }
 	for i = start or 1, stop or #tbl, step or 1 do
 		insert(ret, tbl[i])
 	end
@@ -354,9 +400,9 @@ end
 ]=]
 function TableUtil.fill<T>(tbl: { T }, value: T, start: number?, stop: number?): { T }
 	if TableUtil.isEmpty(tbl) then
-		error("	bl` must not be empty!", 2)
+		error("`tbl` must not be empty!", 2)
 	elseif TableUtil.isDict(tbl) then
-		error("	bl` must be a array-like table!", 2)
+		error("`tbl` must be an array-like table!", 2)
 	elseif start ~= nil and start <= 0 then
 		error("`start` must be more than 0!", 2)
 	elseif stop ~= nil and stop > #tbl then
@@ -377,9 +423,9 @@ end
 ]=]
 function TableUtil.removeDupes<T>(tbl: { T }): { T }
 	if TableUtil.isEmpty(tbl) then
-		error("	bl` must not be empty!", 2)
+		error("`tbl` must not be empty!", 2)
 	elseif TableUtil.isDict(tbl) then
-		error("	bl` must be a array-like table!", 2)
+		error("`tbl` must be an array-like table!", 2)
 	end
 
 	local hash = {} :: { [any]: boolean }
@@ -401,13 +447,26 @@ end
 	@return - 동결된 원본 테이블.
 ]=]
 function TableUtil.deepFreeze(tbl: { [any]: any }): { [any]: any }
-	table.freeze(tbl)
+	local seen = {} :: { [any]: boolean }
 
-	for _, v in pairs(tbl) do
-		if typeof(v) == "table" then
-			TableUtil.deepFreeze(v)
+	local function freezeTable(target: { [any]: any })
+		if seen[target] then
+			return
+		end
+		seen[target] = true
+
+		for _, v in pairs(target) do
+			if typeof(v) == "table" then
+				freezeTable(v)
+			end
+		end
+
+		if not table.isfrozen(target) then
+			table.freeze(target)
 		end
 	end
+
+	freezeTable(tbl)
 
 	return tbl
 end
@@ -444,38 +503,18 @@ local function defaultComparator(a, b): boolean
 end
 
 --[=[
-	정렬된 배열에서 대상 값을 이진 탐색합니다.
-
-	@param array - 정렬된 배열.
-	@param target - 찾을 값.
-	@param comparator - 정렬 비교 함수.
-	@return - 찾은 위치 인덱스.
-]=]
-function TableUtil.binarySearch<item>(array: { item }, target: item, comparator: ((a: item, b: item) -> boolean)?): number?
-	comparator = comparator or defaultComparator
-	local low, high = 1, #array
-	while low <= high do
-		local mid = (low + high) // 2
-		if comparator(target, array[mid]) then
-			high = mid - 1
-		elseif comparator(array[mid], target) then
-			low = mid + 1
-		else
-			return mid -- Found target
-		end
-	end
-	return nil -- Not found
-end
-
---[=[
-	정렬된 배열에서 대상이 들어갈 가장 왼쪽 위치를 반환합니다.
-
+	정렬된 배열에서 target 이상이 처음 나타나는 인덱스를 반환합니다.
+    
+    <Alert severity="Warning">
+	배열은 무조건 정렬된 상태여야합니다, 함수에서 정렬 여부를 검증하지 않습니다.
+    </Alert>
+    
 	@param array - 정렬된 배열.
 	@param target - 삽입 값.
 	@param comparator - 정렬 비교 함수.
 	@return - 삽입 지점 인덱스.
 ]=]
-function TableUtil.bisectLeft<item>(array: { item }, target: item, comparator: ((a: item, b: item) -> boolean)?): number
+function TableUtil.lowerBound<T>(array: { T }, target: T, comparator: ((a: T, b: T) -> boolean)?): number
 	comparator = comparator or defaultComparator
 	local low, high = 1, #array + 1
 	while low < high do
@@ -490,13 +529,19 @@ function TableUtil.bisectLeft<item>(array: { item }, target: item, comparator: (
 end
 
 --[=[
-	정렬된 배열에서 대상이 들어갈 가장 오른쪽 위치를 반환합니다.
+	정렬된 배열에서 target보다 큰 값이 처음 나타나는 인덱스를 반환합니다.
+    값이 끝까지 없으면 #array + 1을 반환합니다.
+    
+	<Alert severity="Warning">
+	배열은 무조건 정렬된 상태여야합니다, 함수에서 정렬 여부를 검증하지 않습니다.
+    </Alert>
+
 	@param array - 정렬된 배열.
 	@param target - 삽입 값.
 	@param comparator - 정렬 비교 함수.
 	@return - 삽입 지점 인덱스.
 ]=]
-function TableUtil.bisectRight<item>(array: { item }, target: item, comparator: ((a: item, b: item) -> boolean)?): number
+function TableUtil.upperBound<T>(array: { T }, target: T, comparator: ((a: T, b: T) -> boolean)?): number
 	comparator = comparator or defaultComparator
 	local low, high = 1, #array + 1
 	while low < high do
