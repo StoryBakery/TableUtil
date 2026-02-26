@@ -555,6 +555,26 @@ function TableUtil.upperBound<T>(array: { T }, target: T, comparator: ((a: T, b:
 	return low
 end
 
+--[=[
+	정렬된 배열에서 `target` 값 구간의 시작/끝 인덱스를 반환합니다.
+	반환 구간은 [left, rightExclusive) 형태입니다.
+    
+    <Alert severity="Warning">
+	배열은 무조건 정렬된 상태여야합니다, 함수에서 정렬 여부를 검증하지 않습니다.
+    </Alert>
+
+	@param array - 정렬된 배열.
+	@param target - 찾을 값.
+	@param comparator - 정렬 비교 함수.
+	@return - `target` 이상이 처음 나타나는 인덱스.
+	@return - `target` 보다 큰 값이 처음 나타나는 인덱스.
+]=]
+function TableUtil.equalRange<T>(array: { T }, target: T, comparator: ((a: T, b: T) -> boolean)?): (number, number)
+	local left = TableUtil.lowerBound(array, target, comparator)
+	local rightExclusive = TableUtil.upperBound(array, target, comparator)
+	return left, rightExclusive
+end
+
 table.freeze(TableUtil)
 
 return TableUtil
