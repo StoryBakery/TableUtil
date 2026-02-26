@@ -503,7 +503,7 @@ local function defaultComparator(a, b): boolean
 end
 
 --[=[
-	정렬된 배열에서 target 이상이 처음 나타나는 인덱스를 반환합니다.
+	정렬된 배열에서 `target` 이상인 값이 처음 나타나는 인덱스를 반환합니다.
     
     <Alert severity="Warning">
 	배열은 무조건 정렬된 상태여야합니다, 함수에서 정렬 여부를 검증하지 않습니다.
@@ -529,7 +529,7 @@ function TableUtil.lowerBound<T>(array: { T }, target: T, comparator: ((a: T, b:
 end
 
 --[=[
-	정렬된 배열에서 target보다 큰 값이 처음 나타나는 인덱스를 반환합니다.
+	정렬된 배열에서 `target` 보다 큰 값이 처음 나타나는 인덱스를 반환합니다.
     값이 끝까지 없으면 #array + 1을 반환합니다.
     
 	<Alert severity="Warning">
